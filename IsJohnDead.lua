@@ -36,7 +36,9 @@ IsJohnDead.deathNames = {
     "Johnignoredbossmechanicsman",
     "Johnflatlineman",
     "Johnnohealthman",
-    "Johncleavecollectorman"
+    "Johncleavecollectorman",
+    "Johnhealerneedshealsman",
+    "Johnpaperarmorman"
 }
 
 -- Saved variables
