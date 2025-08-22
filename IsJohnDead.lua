@@ -118,6 +118,9 @@ function IsJohnDead:ScanForJohn()
         local unitID = "raid" .. i
         local name = UnitName(unitID)
         
+        -- Debug: print all raid member names to help troubleshoot
+        self:DebugPrint("Raid member " .. i .. ": " .. (name or "nil"))
+        
         if name == "Johnhealrman" then
             self.johnUnitID = unitID
             foundJohn = true
