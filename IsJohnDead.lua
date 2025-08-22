@@ -123,25 +123,31 @@ function IsJohnDead:ScanForJohn()
     end
     
     local foundJohn = false
+    local numRaidMembers = GetNumRaidMembers()
     
-    for i = 1, GetNumRaidMembers() do
+    self:DebugPrint("Scanning " .. numRaidMembers .. " raid members (up to 40 slots)")
+    
+    -- Scan up to 40 raid slots (8 groups of 5 members each)
+    for i = 1, 40 do
         local unitID = "raid" .. i
         local name = UnitName(unitID)
         
-        -- Debug: print all raid member names to help troubleshoot
-        self:DebugPrint("Raid member " .. i .. ": " .. (name or "nil"))
-        
-        if name == "Johnhealrman" then
-            self.johnUnitID = unitID
-            foundJohn = true
+        if name then
+            -- Debug: print all raid member names to help troubleshoot
+            self:DebugPrint("Raid slot " .. i .. ": " .. name)
             
-            -- Show confirmation message (internal note)
-            DEFAULT_CHAT_FRAME:AddMessage("John is in the Raid!", 0, 1, 0)
-            self:DebugPrint("Found Johnhealrman as " .. unitID)
-            
-            -- Check his current health
-            self:CheckJohnHealth()
-            break
+            if name == "Johnhealrman" then
+                self.johnUnitID = unitID
+                foundJohn = true
+                
+                -- Show confirmation message (internal note)
+                DEFAULT_CHAT_FRAME:AddMessage("John is in the Raid!", 0, 1, 0)
+                self:DebugPrint("Found Johnhealrman as " .. unitID)
+                
+                -- Check his current health
+                self:CheckJohnHealth()
+                break
+            end
         end
     end
     
