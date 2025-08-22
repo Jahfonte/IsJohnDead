@@ -90,16 +90,26 @@ end
 -- Update raid status and scan for John
 function IsJohnDead:UpdateRaidStatus()
     local wasInRaid = self.isInRaid
-    self.isInRaid = (GetNumRaidMembers() > 0)
+    local numRaidMembers = GetNumRaidMembers()
+    local numPartyMembers = GetNumPartyMembers()
+    
+    -- In vanilla, check both raid and party
+    self.isInRaid = (numRaidMembers > 0)
+    local isInParty = (numPartyMembers > 0)
+    
+    self:DebugPrint("Raid members: " .. numRaidMembers .. ", Party members: " .. numPartyMembers)
     
     if self.isInRaid then
         if not wasInRaid then
             self:DebugPrint("Entered raid - scanning for Johnhealrman")
         end
         self:ScanForJohn()
+    elseif isInParty then
+        self:DebugPrint("In party (not raid) - checking party members")
+        self:ScanForJohnInParty()
     else
         if wasInRaid then
-            self:DebugPrint("Left raid")
+            self:DebugPrint("Left raid/party")
         end
         self.johnUnitID = nil
         self.johnWasLowHealth = false
@@ -137,6 +147,34 @@ function IsJohnDead:ScanForJohn()
     
     if not foundJohn and self.johnUnitID then
         self:DebugPrint("Johnhealrman left the raid")
+        self.johnUnitID = nil
+        self.johnWasLowHealth = false
+    end
+end
+
+-- Scan party roster for Johnhealrman (fallback)
+function IsJohnDead:ScanForJohnInParty()
+    local foundJohn = false
+    
+    -- Check party members (party1, party2, etc.)
+    for i = 1, GetNumPartyMembers() do
+        local unitID = "party" .. i
+        local name = UnitName(unitID)
+        
+        self:DebugPrint("Party member " .. i .. ": " .. (name or "nil"))
+        
+        if name == "Johnhealrman" then
+            self.johnUnitID = unitID
+            foundJohn = true
+            DEFAULT_CHAT_FRAME:AddMessage("John is in the Party!", 0, 1, 0)
+            self:DebugPrint("Found Johnhealrman as " .. unitID)
+            self:CheckJohnHealth()
+            break
+        end
+    end
+    
+    if not foundJohn and self.johnUnitID then
+        self:DebugPrint("Johnhealrman left the party")
         self.johnUnitID = nil
         self.johnWasLowHealth = false
     end
