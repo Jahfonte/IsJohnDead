@@ -1,8 +1,7 @@
 ## Interface: 11200
 ## Title: |cff00ff00Is|cffffffffJohnDead
 ## Author: Jah
-## Version: 1.1
-## Notes: Tracks Johnhealrman's health status in raids
-## SavedVariables: IsJohnDeadDB
+## Version: 1.2
+## Notes: Tracks Johnhealrman's death in raids
 
 IsJohnDead.lua
