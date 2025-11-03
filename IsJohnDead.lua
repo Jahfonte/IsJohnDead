@@ -1,17 +1,17 @@
--- IsJohnDead - Tracks Johnhealrman's health status in raids
--- Author: Jah
+IsJohnDead = IsJohnDead or {}
 
-IsJohnDead = {}
-IsJohnDead.johnUnitID = nil
-IsJohnDead.isInRaid = false
-IsJohnDead.johnWasLowHealth = false
-IsJohnDead.lastWarningTime = 0
-IsJohnDead.lastDeathTime = 0
-IsJohnDead.debugMode = false
-IsJohnDead.outputEnabled = true
+local _G = _G or getfenv(0)
+local addon = IsJohnDead
 
--- Randomized death names
-IsJohnDead.deathNames = {
+addon.johnUnitID = nil
+addon.isInRaid = false
+addon.johnWasLowHealth = false
+addon.lastWarningTime = 0
+addon.lastDeathTime = 0
+addon.debugMode = false
+addon.outputEnabled = true
+
+addon.deathNames = {
     "Johnrespawnman",
     "Johnloggedoutman",
     "Johngotpwnedman",
@@ -41,71 +41,36 @@ IsJohnDead.deathNames = {
     "Johnpaperarmorman"
 }
 
--- Saved variables
 IsJohnDeadDB = IsJohnDeadDB or {
     debugMode = false,
     outputEnabled = true
 }
 
--- Event frame
-local eventFrame = CreateFrame("Frame")
+local frame = CreateFrame("Frame", "IsJohnDeadFrame")
 
--- Initialize addon
-function IsJohnDead:OnLoad()
-    -- Register events
-    eventFrame:RegisterEvent("RAID_ROSTER_UPDATE")
-    eventFrame:RegisterEvent("UNIT_HEALTH")
-    eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    eventFrame:RegisterEvent("ADDON_LOADED")
-    
-    -- Set event handler
-    eventFrame:SetScript("OnEvent", IsJohnDead.OnEvent)
-    
-    -- Register slash commands
-    SLASH_ISJOHNDEAD1 = "/ijd"
-    SlashCmdList["ISJOHNDEAD"] = IsJohnDead.SlashHandler
-end
-
--- Event handler
-function IsJohnDead.OnEvent(self, event, ...)
-    if event == "ADDON_LOADED" and arg1 == "IsJohnDead" then
-        IsJohnDead.debugMode = IsJohnDeadDB.debugMode or false
-        IsJohnDead.outputEnabled = IsJohnDeadDB.outputEnabled or true
-        IsJohnDead:DebugPrint("IsJohnDead loaded")
-        
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        IsJohnDead:UpdateRaidStatus()
-        
-    elseif event == "RAID_ROSTER_UPDATE" then
-        IsJohnDead:UpdateRaidStatus()
-        
-    elseif event == "UNIT_HEALTH" then
-        local unit = arg1
-        if unit and IsJohnDead.johnUnitID and unit == IsJohnDead.johnUnitID then
-            IsJohnDead:CheckJohnHealth()
-        end
+function addon:DebugPrint(message)
+    if self.debugMode then
+        DEFAULT_CHAT_FRAME:AddMessage("[IsJohnDead] " .. tostring(message), 1, 1, 0)
     end
 end
 
--- Update raid status and scan for John
-function IsJohnDead:UpdateRaidStatus()
+function addon:UpdateRaidStatus()
     local wasInRaid = self.isInRaid
     local numRaidMembers = GetNumRaidMembers()
     local numPartyMembers = GetNumPartyMembers()
-    
-    -- In vanilla, check both raid and party
+
     self.isInRaid = (numRaidMembers > 0)
     local isInParty = (numPartyMembers > 0)
-    
-    self:DebugPrint("Raid members: " .. numRaidMembers .. ", Party members: " .. numPartyMembers)
-    
+
+    self:DebugPrint("Raid: " .. tostring(numRaidMembers) .. " Party: " .. tostring(numPartyMembers))
+
     if self.isInRaid then
         if not wasInRaid then
-            self:DebugPrint("Entered raid - scanning for Johnhealrman")
+            self:DebugPrint("Entered raid - scanning")
         end
         self:ScanForJohn()
     elseif isInParty then
-        self:DebugPrint("In party (not raid) - checking party members")
+        self:DebugPrint("In party - scanning")
         self:ScanForJohnInParty()
     else
         if wasInRaid then
@@ -116,41 +81,36 @@ function IsJohnDead:UpdateRaidStatus()
     end
 end
 
--- Scan raid roster for Johnhealrman
-function IsJohnDead:ScanForJohn()
+function addon:ScanForJohn()
     if not self.isInRaid then
         return
     end
-    
+
     local foundJohn = false
     local numRaidMembers = GetNumRaidMembers()
-    
-    self:DebugPrint("Scanning " .. numRaidMembers .. " raid members (up to 40 slots)")
-    
-    -- Scan up to 40 raid slots (8 groups of 5 members each)
+
+    self:DebugPrint("Scanning " .. tostring(numRaidMembers) .. " raid members")
+
     for i = 1, 40 do
-        local unitID = "raid" .. i
+        local unitID = "raid" .. tostring(i)
         local name = UnitName(unitID)
-        
+
         if name then
-            -- Debug: print all raid member names to help troubleshoot
-            self:DebugPrint("Raid slot " .. i .. ": " .. name)
-            
+            self:DebugPrint("Slot " .. tostring(i) .. ": " .. tostring(name))
+
             if name == "Johnhealrman" then
                 self.johnUnitID = unitID
                 foundJohn = true
-                
-                -- Show confirmation message (internal note)
+
                 DEFAULT_CHAT_FRAME:AddMessage("John is in the Raid!", 0, 1, 0)
-                self:DebugPrint("Found Johnhealrman as " .. unitID)
-                
-                -- Check his current health
+                self:DebugPrint("Found Johnhealrman as " .. tostring(unitID))
+
                 self:CheckJohnHealth()
                 break
             end
         end
     end
-    
+
     if not foundJohn and self.johnUnitID then
         self:DebugPrint("Johnhealrman left the raid")
         self.johnUnitID = nil
@@ -158,27 +118,27 @@ function IsJohnDead:ScanForJohn()
     end
 end
 
--- Scan party roster for Johnhealrman (fallback)
-function IsJohnDead:ScanForJohnInParty()
+function addon:ScanForJohnInParty()
     local foundJohn = false
-    
-    -- Check party members (party1, party2, etc.)
+
     for i = 1, GetNumPartyMembers() do
-        local unitID = "party" .. i
+        local unitID = "party" .. tostring(i)
         local name = UnitName(unitID)
-        
-        self:DebugPrint("Party member " .. i .. ": " .. (name or "nil"))
-        
-        if name == "Johnhealrman" then
-            self.johnUnitID = unitID
-            foundJohn = true
-            DEFAULT_CHAT_FRAME:AddMessage("John is in the Party!", 0, 1, 0)
-            self:DebugPrint("Found Johnhealrman as " .. unitID)
-            self:CheckJohnHealth()
-            break
+
+        if name then
+            self:DebugPrint("Party " .. tostring(i) .. ": " .. tostring(name))
+
+            if name == "Johnhealrman" then
+                self.johnUnitID = unitID
+                foundJohn = true
+                DEFAULT_CHAT_FRAME:AddMessage("John is in the Party!", 0, 1, 0)
+                self:DebugPrint("Found Johnhealrman as " .. tostring(unitID))
+                self:CheckJohnHealth()
+                break
+            end
         end
     end
-    
+
     if not foundJohn and self.johnUnitID then
         self:DebugPrint("Johnhealrman left the party")
         self.johnUnitID = nil
@@ -186,104 +146,121 @@ function IsJohnDead:ScanForJohnInParty()
     end
 end
 
--- Check John's health and send warnings
-function IsJohnDead:CheckJohnHealth()
+function addon:CheckJohnHealth()
     if not self.johnUnitID or not UnitExists(self.johnUnitID) then
         return
     end
-    
-    -- Check if John is dead
+
     if UnitIsDead(self.johnUnitID) then
         if not self.johnWasLowHealth or (GetTime() - self.lastDeathTime) > 5 then
             if self.outputEnabled then
-                -- Pick random death name (vanilla 1.12 compatible)
-                local randomIndex = math.random(1, table.getn(self.deathNames))
+                local numNames = table.getn(self.deathNames)
+                local randomIndex = math.random(1, numNames)
                 local randomName = self.deathNames[randomIndex]
                 SendChatMessage(randomName, "RAID")
             end
             self.lastDeathTime = GetTime()
-            self:DebugPrint("John died - " .. (self.outputEnabled and "sent death message" or "output disabled"))
+            self:DebugPrint("John died - " .. (self.outputEnabled and "sent message" or "output disabled"))
         end
         self.johnWasLowHealth = false
         return
     end
-    
-    -- Check health percentage
+
     local currentHP = UnitHealth(self.johnUnitID)
     local maxHP = UnitHealthMax(self.johnUnitID)
-    
+
     if maxHP > 0 then
         local healthPercent = (currentHP / maxHP) * 100
-        
-        -- Check for low health (20% threshold)
+
         if healthPercent <= 20 and not self.johnWasLowHealth then
-            if (GetTime() - self.lastWarningTime) > 5 then  -- 5 second cooldown
+            if (GetTime() - self.lastWarningTime) > 5 then
                 if self.outputEnabled then
                     SendChatMessage("Johnhealrman is almost dead! Heal him quick!", "YELL")
                 end
                 self.johnWasLowHealth = true
                 self.lastWarningTime = GetTime()
-                self:DebugPrint("John at " .. string.format("%.1f", healthPercent) .. "% health - " .. (self.outputEnabled and "sent warning" or "output disabled"))
+                self:DebugPrint("John at " .. tostring(string.format("%.1f", healthPercent)) .. "% - warning sent")
             end
         elseif healthPercent > 25 then
-            -- Reset warning flag when health goes above 25%
             self.johnWasLowHealth = false
         end
-        
-        self:DebugPrint("John health: " .. string.format("%.1f", healthPercent) .. "%")
+
+        self:DebugPrint("John HP: " .. tostring(string.format("%.1f", healthPercent)) .. "%")
     end
 end
 
--- Debug print function
-function IsJohnDead:DebugPrint(message)
-    if self.debugMode then
-        DEFAULT_CHAT_FRAME:AddMessage("[IsJohnDead Debug] " .. message, 1, 1, 0)
+local function OnEvent()
+    if event == "ADDON_LOADED" and arg1 == "IsJohnDead" then
+        addon.debugMode = IsJohnDeadDB.debugMode or false
+        addon.outputEnabled = IsJohnDeadDB.outputEnabled
+        if addon.outputEnabled == nil then
+            addon.outputEnabled = true
+        end
+        addon:DebugPrint("IsJohnDead loaded v1.1")
+
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        addon:UpdateRaidStatus()
+
+    elseif event == "RAID_ROSTER_UPDATE" then
+        addon:UpdateRaidStatus()
+
+    elseif event == "UNIT_HEALTH" then
+        local unit = arg1
+        if unit and addon.johnUnitID and unit == addon.johnUnitID then
+            addon:CheckJohnHealth()
+        end
     end
 end
 
--- Slash command handler
-function IsJohnDead.SlashHandler(msg)
+local function SlashHandler(msg)
     local command = string.lower(msg or "")
-    
+
     if command == "status" then
-        local status = "IsJohnDead Status:\n"
-        status = status .. "In Raid: " .. (IsJohnDead.isInRaid and "Yes" or "No") .. "\n"
-        status = status .. "John Found: " .. (IsJohnDead.johnUnitID and "Yes (" .. IsJohnDead.johnUnitID .. ")" or "No") .. "\n"
-        status = status .. "Debug Mode: " .. (IsJohnDead.debugMode and "On" or "Off") .. "\n"
-        status = status .. "Output Enabled: " .. (IsJohnDead.outputEnabled and "On" or "Off")
+        local status = "IsJohnDead Status:"
         DEFAULT_CHAT_FRAME:AddMessage(status, 1, 1, 1)
-        
+        DEFAULT_CHAT_FRAME:AddMessage("In Raid: " .. (addon.isInRaid and "Yes" or "No"), 0.8, 0.8, 0.8)
+        DEFAULT_CHAT_FRAME:AddMessage("John Found: " .. (addon.johnUnitID and ("Yes (" .. tostring(addon.johnUnitID) .. ")") or "No"), 0.8, 0.8, 0.8)
+        DEFAULT_CHAT_FRAME:AddMessage("Debug: " .. (addon.debugMode and "On" or "Off"), 0.8, 0.8, 0.8)
+        DEFAULT_CHAT_FRAME:AddMessage("Output: " .. (addon.outputEnabled and "On" or "Off"), 0.8, 0.8, 0.8)
+
     elseif command == "debug" then
-        IsJohnDead.debugMode = not IsJohnDead.debugMode
-        IsJohnDeadDB.debugMode = IsJohnDead.debugMode
-        DEFAULT_CHAT_FRAME:AddMessage("IsJohnDead debug mode: " .. (IsJohnDead.debugMode and "ON" or "OFF"), 1, 1, 0)
-        
+        addon.debugMode = not addon.debugMode
+        IsJohnDeadDB.debugMode = addon.debugMode
+        DEFAULT_CHAT_FRAME:AddMessage("IsJohnDead debug: " .. (addon.debugMode and "ON" or "OFF"), 1, 1, 0)
+
     elseif command == "output" then
-        IsJohnDead.outputEnabled = not IsJohnDead.outputEnabled
-        IsJohnDeadDB.outputEnabled = IsJohnDead.outputEnabled
-        DEFAULT_CHAT_FRAME:AddMessage("IsJohnDead output: " .. (IsJohnDead.outputEnabled and "ON" or "OFF"), 1, 1, 0)
-        
+        addon.outputEnabled = not addon.outputEnabled
+        IsJohnDeadDB.outputEnabled = addon.outputEnabled
+        DEFAULT_CHAT_FRAME:AddMessage("IsJohnDead output: " .. (addon.outputEnabled and "ON" or "OFF"), 1, 1, 0)
+
     elseif command == "scan" then
-        IsJohnDead:ScanForJohn()
-        DEFAULT_CHAT_FRAME:AddMessage("Manual raid scan completed", 1, 1, 0)
-        
+        addon:UpdateRaidStatus()
+        DEFAULT_CHAT_FRAME:AddMessage("Manual scan completed", 1, 1, 0)
+
     elseif command == "test" then
-        if IsJohnDead.johnUnitID then
-            IsJohnDead:CheckJohnHealth()
+        if addon.johnUnitID then
+            addon:CheckJohnHealth()
             DEFAULT_CHAT_FRAME:AddMessage("Health check performed", 1, 1, 0)
         else
-            DEFAULT_CHAT_FRAME:AddMessage("Johnhealrman not found in raid", 1, 0.5, 0)
+            DEFAULT_CHAT_FRAME:AddMessage("Johnhealrman not found", 1, 0.5, 0)
         end
-        
+
     else
         DEFAULT_CHAT_FRAME:AddMessage("IsJohnDead Commands:", 1, 1, 1)
-        DEFAULT_CHAT_FRAME:AddMessage("/ijd status - Show monitoring status", 0.8, 0.8, 0.8)
-        DEFAULT_CHAT_FRAME:AddMessage("/ijd debug - Toggle debug mode", 0.8, 0.8, 0.8)
-        DEFAULT_CHAT_FRAME:AddMessage("/ijd output - Toggle chat output on/off", 0.8, 0.8, 0.8)
-        DEFAULT_CHAT_FRAME:AddMessage("/ijd scan - Manual raid scan", 0.8, 0.8, 0.8)
+        DEFAULT_CHAT_FRAME:AddMessage("/ijd status - Show status", 0.8, 0.8, 0.8)
+        DEFAULT_CHAT_FRAME:AddMessage("/ijd debug - Toggle debug", 0.8, 0.8, 0.8)
+        DEFAULT_CHAT_FRAME:AddMessage("/ijd output - Toggle output", 0.8, 0.8, 0.8)
+        DEFAULT_CHAT_FRAME:AddMessage("/ijd scan - Manual scan", 0.8, 0.8, 0.8)
         DEFAULT_CHAT_FRAME:AddMessage("/ijd test - Test health check", 0.8, 0.8, 0.8)
     end
 end
 
--- Initialize when loaded
-IsJohnDead:OnLoad()
+frame:RegisterEvent("ADDON_LOADED")
+frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+frame:RegisterEvent("RAID_ROSTER_UPDATE")
+frame:RegisterEvent("UNIT_HEALTH")
+
+frame:SetScript("OnEvent", OnEvent)
+
+SLASH_ISJOHNDEAD1 = "/ijd"
+SlashCmdList["ISJOHNDEAD"] = SlashHandler
