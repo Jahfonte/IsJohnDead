@@ -7,6 +7,7 @@ addon.johnUnitID = nil
 addon.isInRaid = false
 addon.lastDeathTime = 0
 addon.johnDetected = false
+addon.deathCount = 0
 
 addon.deathNames = {
     "Johnrespawnman",
@@ -35,7 +36,67 @@ addon.deathNames = {
     "Johnnohealthman",
     "Johncleavecollectorman",
     "Johnhealerneedshealsman",
-    "Johnpaperarmorman"
+    "Johnpaperarmorman",
+    "Johnreztimerlongman",
+    "Johnghostreleasedman",
+    "Johncorpserunman",
+    "Johnspirithealsman",
+    "Johnlagspikeman",
+    "Johnbackpedalman",
+    "Johnfelloffcliffman",
+    "Johnstoodinfrontman",
+    "Johnparryhastedman",
+    "Johndoomfireman",
+    "Johnpatchwerkedman",
+    "Johnoneshotcritman",
+    "Johnoveraggroman",
+    "Johntrainwreckman",
+    "Johnfloorismylifeman",
+    "Johnvoidzoneman",
+    "Johncleaveenjoyerman",
+    "Johnafkmidpullman",
+    "Johnlogouttimerhitman",
+    "Johnhealeroomman",
+    "Johnforgotcooldownman",
+    "Johnbubblewasdownman",
+    "Johnpotiononcooldownman",
+    "Johndisconnectedman",
+    "Johnkeyboardwalkman",
+    "Johnwrongtargetman",
+    "Johnbehindbreathman",
+    "Johnsharkbaitman",
+    "Johndrowningman",
+    "Johnlavahopman",
+    "Johnaoedownman",
+    "Johnpullsadman",
+    "Johntoosquishyman",
+    "Johnheaddeskman",
+    "Johnfearpulletman",
+    "Johntailwhippedman",
+    "Johnknockbackcliffman",
+    "Johnmisplacedtotemman",
+    "Johnchainlightningedman",
+    "Johncursestackedman",
+    "Johninterruptfailman",
+    "Johnprepotforgotman",
+    "Johnstoodintornadoesman",
+    "Johnpoisoncloudman",
+    "Johnshadowcrashman",
+    "Johnmeteorsmashedman",
+    "Johnbleedoutman",
+    "Johnmortalwoundman",
+    "Johnbloodpoolman",
+    "Johnaggroresetman",
+    "Johnmindcontrolledman",
+    "Johnstunsilencedman",
+    "Johntwoshotman",
+    "Johnmindblastedman",
+    "Johnthreatcapman",
+    "Johnoomtankman",
+    "Johnwrongphaseman",
+    "Johndidntdispelman",
+    "Johntankspotman",
+    "Johnraidstackman"
 }
 
 local frame = CreateFrame("Frame", "IsJohnDeadFrame")
@@ -119,7 +180,9 @@ function addon:CheckJohnHealth()
             local numNames = table.getn(self.deathNames)
             local randomIndex = math.random(1, numNames)
             local randomName = self.deathNames[randomIndex]
-            SendChatMessage(randomName, "RAID")
+            self.deathCount = self.deathCount + 1
+            local deathMessage = randomName .. " [" .. tostring(self.deathCount) .. "]"
+            SendChatMessage(deathMessage, "RAID")
             self.lastDeathTime = GetTime()
         end
     end
