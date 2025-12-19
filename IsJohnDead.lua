@@ -10,6 +10,7 @@ addon.johnDetected = false
 addon.deathCount = 0
 
 addon.deathNames = {
+    "Johnbbwman",
     "Johnrespawnman",
     "Johnloggedoutman",
     "Johngotpwnedman",
